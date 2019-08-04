@@ -9,7 +9,6 @@
   <modules>
   	<module>transactions-app</module>
     <module>transactions-domain</module>
-    <!--module>transactions-persistence-hazelcast</module-->
     <module>transactions-persistence-mongo</module>
   </modules>
 </project>
