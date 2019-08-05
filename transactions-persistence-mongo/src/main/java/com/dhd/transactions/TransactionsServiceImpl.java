@@ -21,81 +21,78 @@ import reactor.core.publisher.Mono;
 @Service
 public class TransactionsServiceImpl implements TransactionsService {
 
-    private final TransactionRepository transactionsRepository;
+	private final TransactionRepository transactionsRepository;
 
-    private final TransactionMapper transactionsMapper;
+	private final TransactionMapper transactionsMapper;
 
-    private final AccountRepository accountRepository;
+	private final AccountRepository accountRepository;
 
-    private final AccountMapper accountMapper;
+	private final AccountMapper accountMapper;
 
-    private final TransactionDtoMapper transactionDtoMapper;
+	private final TransactionDtoMapper transactionDtoMapper;
 
-    @Autowired
-    public TransactionsServiceImpl(TransactionRepository trepository, TransactionMapper tmapper,
-            AccountRepository arepository, AccountMapper amapper, TransactionDtoMapper transactionDtoMapper) {
+	@Autowired
+	public TransactionsServiceImpl(TransactionRepository trepository, TransactionMapper tmapper,
+			AccountRepository arepository, AccountMapper amapper, TransactionDtoMapper transactionDtoMapper) {
 
-        this.transactionsRepository = trepository;
-        this.transactionsMapper = tmapper;
-        this.accountRepository = arepository;
-        this.accountMapper = amapper;
-        this.transactionDtoMapper = transactionDtoMapper;
-    }
+		this.transactionsRepository = trepository;
+		this.transactionsMapper = tmapper;
+		this.accountRepository = arepository;
+		this.accountMapper = amapper;
+		this.transactionDtoMapper = transactionDtoMapper;
+	}
 
-    @Override
-    public Mono<String> insertTransaction(TransactionPayload payload) {
+	@Override
+	public Mono<String> insertTransaction(TransactionPayload payload) {
 
-        return transactionsRepository
-                .save(transactionsMapper.createTransactionPayloadToEntity(payload)) //
-                .map(TransactionEntity::getReference);
-    }
+		return transactionsRepository.save(transactionsMapper.createTransactionPayloadToEntity(payload)) //
+				.map(TransactionEntity::getReference);
+	}
 
-    @Override
-    public Flux<TransactionPayload> searchTransactions(SearchTransactionDto search) {
+	@Override
+	public Flux<TransactionPayload> searchTransactions(SearchTransactionDto search) {
 
-        switch (search.getSort()) {
-            case NONE:
-                return transactionsRepository.findAllByAccountIbanOrderByDateDesc(search.getAccountIban()).map(
-                        transactionsMapper::transactionEntityToPayload);
-            case ASC:
-                return transactionsRepository.findAllByAccountIbanOrderByAmountAsc(search.getAccountIban()).map(
-                        transactionsMapper::transactionEntityToPayload);
-            case DESC:
-                return transactionsRepository.findAllByAccountIbanOrderByAmountDesc(search.getAccountIban()).map(
-                        transactionsMapper::transactionEntityToPayload);
-        }
-        return Flux.empty();
-    }
+		switch (search.getSort()) {
+		case NONE:
+			return transactionsRepository.findAllByAccountIbanOrderByDateDesc(search.getAccountIban())
+					.map(transactionsMapper::transactionEntityToPayload);
+		case ASC:
+			return transactionsRepository.findAllByAccountIbanOrderByAmountAsc(search.getAccountIban())
+					.map(transactionsMapper::transactionEntityToPayload);
+		case DESC:
+			return transactionsRepository.findAllByAccountIbanOrderByAmountDesc(search.getAccountIban())
+					.map(transactionsMapper::transactionEntityToPayload);
+		}
+		return Flux.empty();
+	}
 
-    @Override
-    public Mono<AccountDto> getAccount(String iban) {
+	@Override
+	public Mono<AccountDto> getAccount(String iban) {
 
-        return accountRepository.findById(iban).map(accountMapper::accountEntityToDto);
-    }
+		return accountRepository.findById(iban).map(accountMapper::accountEntityToDto);
+	}
 
-    @Override
-    public Mono<String> updateAccount(TransactionPayload payload) {
+	@Override
+	public Mono<String> updateAccount(TransactionPayload payload) {
 
-        return accountRepository
-                .findById(payload.getAccountIban()) //
-                .map(a -> getUpdatedAccount(a, payload))
-                .flatMap(accountRepository::save)
-                .map(AccountEntity::getAccountIban);
+		return accountRepository.findById(payload.getAccountIban()) //
+				.map(a -> getUpdatedAccount(a, payload)).flatMap(accountRepository::save)
+				.map(AccountEntity::getAccountIban);
 
-    }
+	}
 
-    private AccountEntity getUpdatedAccount(AccountEntity account, TransactionPayload payload) {
+	private AccountEntity getUpdatedAccount(AccountEntity account, TransactionPayload payload) {
 
-        account.setAmount(account.getAmount().add(payload.getAmount()).subtract(payload.getFee()));
-        return account;
-    }
+		account.setAmount(account.getAmount().add(payload.getAmount()));
+		return account;
+	}
 
-    @Override
-    public Mono<TransactionDto> getTransactionByReference(String reference) {
+	@Override
+	public Mono<TransactionDto> getTransactionByReference(String reference) {
 
-        Mono<TransactionEntity> mono = transactionsRepository.findById(reference);
+		Mono<TransactionEntity> mono = transactionsRepository.findById(reference);
 
-        return mono.map(transactionDtoMapper::transactionEntityToDto);
-    }
+		return mono.map(transactionDtoMapper::transactionEntityToDto);
+	}
 
 }
