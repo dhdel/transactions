@@ -55,11 +55,9 @@ public interface TransactionsService {
     default Mono<TransactionStatusResponsePayload> transactionStatus(TransactionStatusRequestPayload query) {
 
         return getTransactionByReference(query.getReference())
-                .log()
                 .filter(
                         t -> StringUtils.isEmpty(query.getChannel())
                                 || t.getChannel().equals(ChannelEnum.valueOf(query.getChannel().toUpperCase())))
-                .log()
                 .map(this::getPayload)
                 .switchIfEmpty(
                         Mono.just(
